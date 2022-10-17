@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
-using Davis.Arch;
+using Davis.SyntaxTree;
 
 namespace Davis
 {
@@ -26,7 +26,6 @@ namespace Davis
 			byte[] IR;
 
 			// x86
-			Bits num_mode;
 			string addtl_args;
 			string final_asm;
 
@@ -37,7 +36,7 @@ namespace Davis
 				Console.WriteLine("Enter output path.");
 				output_path = Console.ReadLine();
 				Console.WriteLine("Enter additional argument flags.");
-				string addtl Console.ReadLine();
+				string addtl = Console.ReadLine();
 			} else {
 				input_path = args[1];
 				output_path = args[2];
@@ -56,8 +55,12 @@ namespace Davis
 		}
 
 		static void PreprocessSource(in string source, out string processed) {
-			throw new NotImplementedException();
-		}
+            Parser.Parser.Parse(source);
+            List<Token> t = Parser.Parser.Output;
+            Console.WriteLine(string.Join(",\n\n", t));
+
+            processed = null;
+        }
 
 		static void CompileSourceToRepresentation(in string source, out byte[] IR) {
 			throw new NotImplementedException();
