@@ -1,4 +1,13 @@
 #preprocessor directive test
 
+var
+stackalloc
+heapalloc
+while
+if
+else
+sizeof
 
-
+assembly {
+    my balls
+}

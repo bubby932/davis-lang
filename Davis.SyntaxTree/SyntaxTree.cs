@@ -10,7 +10,7 @@
         QuoteDouble, QuoteSingle,
 
         // Keywords
-        While, If, Else, Var, Sizeof,
+        While, If, Else, Var, Sizeof, Assembly,
 
         // Pointers
         Ampersand,
