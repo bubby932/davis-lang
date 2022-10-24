@@ -1,0 +1,10 @@
+PushConst
+351
+PushConst
+34
+PushConst
+35
+IntrinsicAdd
+SimulatorIntrinsicPrintNoPop
+IntrinsicAdd
+SimulatorIntrinsicPrint

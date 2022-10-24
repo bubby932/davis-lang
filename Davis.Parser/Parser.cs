@@ -148,7 +148,7 @@ namespace Davis.Parser {
 					default:
 						return;
 				}
-				current_end++;
+				++current_end;
 			}
 			current_start = current_end;
 		}

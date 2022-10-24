@@ -5,15 +5,19 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using Davis.SyntaxTree;
+using Davis.IR;
+using System.Diagnostics;
 
 namespace Davis
 {
 	class Program
 	{
-		/// <remarks>
-		/// Usage: <PATH> <Input Source Root> <Output Source Binary> <Additional (bits, etc)>
-		/// </remarks>
-		static void Main(string[] args)
+        static bool s_Verbose = false;
+
+        /// <remarks>
+        /// Usage: <PATH> <Input Source Root> <Output Source Binary> <Additional (bits, etc)>
+        /// </remarks>
+        static void Main(string[] args)
 		{
 			// IO
 			string input_path;
@@ -24,35 +28,49 @@ namespace Davis
 
 			// IR
 			byte[] IR;
+            object[] Constants;
 
-			// x86
-			string addtl_args;
+            // x86
+            string addtl_args;
 			string final_asm;
 
 			// If we don't have enough arguments, query the user.
-			if(args.Length < 3) {
+			if(args.Length < 2) {
 				Console.WriteLine("Enter input path.");
 				input_path = Console.ReadLine();
 				Console.WriteLine("Enter output path.");
 				output_path = Console.ReadLine();
 				Console.WriteLine("Enter additional argument flags.");
-				string addtl = Console.ReadLine();
+				addtl_args = Console.ReadLine();
 			} else {
-				input_path = args[1];
-				output_path = args[2];
-				if(args.Length > 3) {
-					addtl_args = args[3];
+				input_path = args[0];
+				output_path = args[1];
+				if(args.Length > 2) {
+					addtl_args = args[2];
 				} else {
 					addtl_args = "";
 				}
 			}
 
-			string source = File.ReadAllText(input_path);
+            s_Verbose = addtl_args.Contains("--verbose");
 
-			PreprocessSource(in source, out final_source);
+            string source = File.ReadAllText(input_path);
 
-			CompileSourceToRepresentation(in final_source, out IR);
-		}
+			if(addtl_args.Contains("--raw-ir")) {
+                (IR, Constants) = ParseIR(source);
+            } else {
+				PreprocessSource(in source, out final_source);
+
+				CompileSourceToRepresentation(in final_source, out IR, out Constants);
+			}
+
+			if(addtl_args.Contains("--local-sim")) {
+                Simulate(in IR, in Constants);
+                return;
+            } else {
+				CompileToNasmX86(in IR, out final_asm);
+			}
+        }
 
 		static void PreprocessSource(in string source, out string processed) {
             Parser.Parser.Parse(source);
@@ -62,12 +80,118 @@ namespace Davis
             processed = null;
         }
 
-		static void CompileSourceToRepresentation(in string source, out byte[] IR) {
+		static void CompileSourceToRepresentation(in string source, out byte[] IR, out object[] constants) {
 			throw new NotImplementedException();
 		}
+
+		static (byte[], object[]) ParseIR(in string IR) {
+            string[] lines = IR.Split('\n');
+
+            List<byte> ir = new List<byte>();
+            List<object> constants = new List<object>();
+
+            foreach(string literal in lines) {
+				switch(literal) {
+					case "PushConst": {
+						ir.Add((byte)Instruction.OpPushConst);
+						break;
+					}
+					case "IntrinsicAdd": {
+						ir.Add((byte)Instruction.IntrinsicAdd);
+						break;
+					}
+					case "SimulatorIntrinsicPrint": {
+						ir.Add((byte)Instruction.SimulatorIntrinsicPrint);
+						break;
+					}
+					case "SimulatorIntrinsicPrintNoPop": {
+						ir.Add((byte)Instruction.SimulatorIntrinsicPrintNoPop);
+						break;
+					}
+					default: {
+						if(int.TryParse(literal, out int result)) {
+                            constants.Add(result);
+                        } else {
+                            constants.Add(literal);
+                        }
+                        break;
+					}
+                }
+			}
+
+            return (ir.ToArray(), constants.ToArray());
+        }
 
 		static void CompileToNasmX86(in byte[] IR, out string asm) {
 			throw new NotImplementedException();
 		}
+
+		static void Simulate(in byte[] IR, in object[] constants) {
+            Console.WriteLine("[ Status ] Initializing emulator...");
+            int ip = 0;
+
+            Dictionary<int, object> constant_map = new Dictionary<int, object>();
+
+			{
+                Console.WriteLine("[ Status ] Mapping constants for faster lookup...");
+                Stopwatch time = new Stopwatch();
+                time.Start();
+
+                int idx = 0;
+                for (int instr = 0; instr < IR.Length; instr++)
+				{
+					if((Instruction)IR[instr] != Instruction.OpPushConst) continue;
+
+                    constant_map[instr] = constants[idx++];
+                }
+
+                time.Stop();
+                Console.WriteLine($"[ Status ] Mapped constants to dictionary in {time.ElapsedMilliseconds}ms.");
+
+				if(s_Verbose) {
+                    Console.WriteLine(
+                        "[ Verbose ] Constant mapping table:\n            " +
+						string.Join(
+							"\n            ",
+							constant_map
+						)
+                    );
+                }
+            }
+
+            Console.WriteLine("[ Status ] Initialized emulator env ok, setting up VM...");
+
+            Stack<object> ProgramStack = new Stack<object>();
+
+            Console.WriteLine("[ Status ] VM init ok, beginning execution.");
+
+            for (; ip < IR.Length; ip++) {
+				switch(IR[ip]) {
+					case (byte)Instruction.OpPushConst: {
+                        ProgramStack.Push(constant_map[ip]);
+                        break;
+					}
+					case (byte)Instruction.IntrinsicAdd: {
+                        int a = (int)ProgramStack.Pop();
+                        int b = (int)ProgramStack.Pop();
+                        ProgramStack.Push(a + b);
+                        break;
+					}
+					case (byte)Instruction.SimulatorIntrinsicPrint: {
+                        object value = ProgramStack.Pop();
+                        Console.WriteLine($"[ Program ] {value}");
+                        break;
+					}
+					case (byte)Instruction.SimulatorIntrinsicPrintNoPop: {
+                        object value = ProgramStack.Peek();
+                        Console.WriteLine($"[ Program ] {value}");
+                        break;
+					}
+                    default: throw new NotImplementedException($"Unrecognized instruction {(Instruction)IR[ip]}");
+                }
+            }
+
+            Console.WriteLine("[ Status ] Program execution complete, exiting...");
+        }
 	}
 }
