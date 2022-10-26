@@ -21,47 +21,89 @@ namespace Davis.Parser
 
 			while (current_end < src.Length)
 			{
-				switch (src[current_end])
+                switch (src[current_end])
 				{
-					case '#':
-						SkipWhitespace();
-						while (!Match('\n'))
+					case '#': 
+						{
+							SkipWhitespace();
+							while (!MatchNext('\n'))
+								++current_end;
+
 							++current_end;
+							current_start = current_end;
 
-						++current_end;
-						current_start = current_end;
-
-						Emit(TokenType.PreprocessorDirective);
-						break;
-					case '/':
-						if (Match('/'))
-						{
-							// Comment
-							MatchUntil('\n');
+							Emit(TokenType.PreprocessorDirective);
+							break;
 						}
-						else if (Match('*'))
+					case '/': 
 						{
-							/* Comment */
-							while (current_end < src.Length && !Match('/'))
+							if (MatchNext('/'))
 							{
-								MatchUntil('*');
+								// Comment
+								MatchUntil('\n');
 							}
-							++current_end;
+							else if (MatchNext('*'))
+							{
+								/* Comment */
+								while (current_end < src.Length && !MatchNext('/'))
+								{
+									MatchUntil('*');
+								}
+								++current_end;
+							}
+							else
+							{
+								Emit(TokenType.Slash);
+							}
+							break;
 						}
-						else
+					case '{': 
 						{
-							Emit(TokenType.Slash);
-						}
-						break;
-					case '"':
-						break;
+							Emit(TokenType.CurlyBracketOpen);
+                            break;
+                        }
+					case '}': 
+						{
+							Emit(TokenType.CurlyBracketClose);
+                            break;
+                        }
+					case '(': 
+						{
+                            Emit(TokenType.CurveBracketOpen);
+                            break;
+                        }
+					case ')': 
+						{
+                            Emit(TokenType.CurveBracketClose);
+                            break;
+                        }
+					case '[': 
+						{
+							Emit(TokenType.SquareBracketOpen);
+                            break;
+                        }
+					case ']': 
+						{
+							Emit(TokenType.SquareBracketClose);
+                            break;
+                        }
+					case '<': 
+						{
+							Emit(TokenType.OpenAngleBracket);
+                            break;
+                        }
+					case '>': 
+						{
+							Emit(TokenType.CloseAngleBracket);
+                            break;
+                        }
 					default:
 						{
 							if (IsAlphanumeric(src[current_end]))
 							{
 								string literal = Identifier();
 
-								if (literal != "assembly") break;
+                                if (literal != "assembly") break;
 
 								Output.RemoveAt(Output.Count - 1);
 
@@ -90,7 +132,7 @@ namespace Davis.Parser
 						}
 				}
 
-				++current_end;
+				current_end++;
 				SkipWhitespace();
 			}
 		}
@@ -107,7 +149,8 @@ namespace Davis.Parser
 			current_start = current_end;
 		}
 
-		private static bool Match(char c) => src[current_end + 1] == c;
+		private static bool MatchNext(char c) => src[current_end + 1] == c;
+		private static bool MatchPrevious(char c) => src[current_end - 1] == c;
 
 		private static void MatchUntil(char c)
 		{
@@ -132,7 +175,7 @@ namespace Davis.Parser
 				}
 				else
 				{
-					break;
+                    break;
 				}
 			}
 		}
@@ -147,7 +190,7 @@ namespace Davis.Parser
 
 		private static void Consume(char c, string on_error)
 		{
-			if (Match(c)) ++current_end;
+			if (MatchNext(c)) ++current_end;
 			else throw new System.Exception(on_error);
 		}
 
@@ -163,20 +206,22 @@ namespace Davis.Parser
 					case '\r':
 						break;
 					default:
-						return;
+                        return;
 				}
 				++current_end;
 			}
-			current_start = current_end;
+            current_start = current_end;
 		}
 
 		private static string Identifier()
 		{
-			current_start = current_end;
+            SkipWhitespace();
+            current_start = current_end;
 			MatchAlphanumeric();
 
 			string s = src.Substring(current_start, current_end - current_start);
-			switch (s)
+            Console.WriteLine($"{s}|");
+            switch (s)
 			{
 				case "stackalloc":
 					{
@@ -218,6 +263,11 @@ namespace Davis.Parser
 						Emit(TokenType.Assembly);
 						return s;
 					}
+				case "function":
+					{
+                        Emit(TokenType.Function);
+                        return s;
+                    }
 				default:
 					{
 						Emit(TokenType.Identifier);

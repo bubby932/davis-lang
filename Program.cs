@@ -8,6 +8,7 @@ using Davis.SyntaxTree;
 using Davis.IR;
 using System.Diagnostics;
 using Davis.Compilation;
+using Davis.Parser;
 
 namespace Davis
 {
@@ -59,7 +60,15 @@ namespace Davis
 
 			if(addtl_args.Contains("--raw-ir")) {
 				(IR, Constants) = ParseIR(source);
-			} else {
+			} else if(addtl_args.Contains("--parse-only")){
+                Parser.Parser.Parse(source);
+                Console.WriteLine($"Tokens:\n{string.Join("\n", Parser.Parser.Output)}");
+                TokenStream stream = new TokenStream(Parser.Parser.Output);
+                (IR, Constants) = stream.Compile();
+                Console.WriteLine(
+                    $"IR:\n{IR}\nConstants:\n{Constants}"
+                );
+            } else {
 				PreprocessSource(in source, out final_source);
 
 				CompileSourceToRepresentation(in final_source, out IR, out Constants);
