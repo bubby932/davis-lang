@@ -44,10 +44,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
-    <Compile Include="Davis.IntermediateRepresentation/IR.cs" />
-    <Compile Include="Davis.Parser/Parser.cs" />
-    <Compile Include="Davis.SyntaxTree/SyntaxTree.cs" />
-    <Compile Include="Davis.Compiler/Compiler.cs" />
+    <Compile Include="Davis.IntermediateRepresentation\IR.cs" />
+    <Compile Include="Davis.Parser\Parser.cs" />
+    <Compile Include="Davis.SyntaxTree\SyntaxTree.cs" />
+    <Compile Include="Davis.Compiler\Compiler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

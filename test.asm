@@ -1,12 +1,10 @@
-PushConst
-351
-PushConst
-34
-PushConst
-35
-PushConst
-This is a basic hello world in Davis IR.
-Assembly
+bits 16 ; 16-Bit Real Mode
+push 0x15F
+push 0x22
+push 0x23
+push string_0
+
+
 mov si, string_0
 call puts
 cli
@@ -38,4 +36,8 @@ puts:
     pop ax
     pop si
     ret
-__EndAssembly
+
+
+; ------- Constants ------
+string_0: db 'This is a basic hello world in Davis IR.', 0
+
