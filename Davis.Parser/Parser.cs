@@ -23,6 +23,21 @@ namespace Davis.Parser
 			{
                 switch (src[current_end])
 				{
+					case '*':
+						{
+                            Emit(TokenType.Star);
+                            break;
+                        }
+					case '&':
+						{
+                            Emit(TokenType.Ampersand);
+                            break;
+                        }
+					case ';':
+						{
+                            Emit(TokenType.Semicolon);
+                            break;
+                        }
 					case '#': 
 						{
 							SkipWhitespace();
@@ -95,6 +110,13 @@ namespace Davis.Parser
 					case '>': 
 						{
 							Emit(TokenType.CloseAngleBracket);
+                            break;
+                        }
+					case '"':
+						{
+                            MatchUntil('"');
+                            current_start += 2;
+                            Emit(TokenType.Literal);
                             break;
                         }
 					default:
@@ -266,6 +288,11 @@ namespace Davis.Parser
 				case "function":
 					{
                         Emit(TokenType.Function);
+                        return s;
+                    }
+				case "type":
+				 	{
+                        Emit(TokenType.Type);
                         return s;
                     }
 				default:
